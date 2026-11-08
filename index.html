@@ -29,7 +29,7 @@
                 <button onclick="openReportModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-sm">
                     📊 รายงาน & แจ้งเตือน
                 </button>
-                <span class="text-sm bg-indigo-600 px-3 py-1.5 rounded-full hidden lg:inline">HR Admin</span>
+                <span class="text-sm bg-indigo-600 px-3 py-1.5 rounded-full hidden lg:inline">บริษัท เจริญการฟาร์ม จำกัด</span>
             </div>
         </div>
     </header>
@@ -355,9 +355,9 @@
         let allPassportsData = [];
         let html5QrCode = null;
 
-        // 🟢 ตั้งค่าเชื่อมต่อ Supabase Storage (ใส่ Supabase URL และ Anon Key ของคุณ)
+        // 🟢 ตั้งค่าเชื่อมต่อ Supabase Storage (ใส่ Anon Key ตัวจริงของคุณเรียบร้อยแล้ว)
         const SUPABASE_URL = 'https://tdwcsmvqufvbotzbssuq.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // แทนที่ด้วย Anon Key ของคุณ
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2NzbXZxdWZ2Ym90emJzc3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxMjkzNTksImV4cCI6MjEwOTcwNTM1OX0.EIp4kwdpLzJTa1wh7-SdOFjqomuZ335fnylByYrxxgw'; 
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ฟังก์ชันอัปโหลดรูปภาพเข้า Supabase Storage
@@ -755,7 +755,7 @@
             modal.classList.add('hidden');
         }
 
-        // ฟังก์ชันเปิดกล้องสแกน (บังคับใช้กล้องหลัง Environment ทันที ป้องกันการสลับกล้องผิดพลาด)
+        // ฟังก์ชันเปิดกล้องสแกน (บังคับใช้กล้องหลัง Environment ทันที)
         async function startScanner() {
             const modal = document.getElementById('scannerModal');
             modal.classList.remove('hidden');
