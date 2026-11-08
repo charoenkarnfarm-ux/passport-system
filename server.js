@@ -6,7 +6,6 @@ const app = express();
 const port = process.env.PORT || 10000;
 
 // ตั้งค่าการเชื่อมต่อ PostgreSQL / Supabase
-// รองรับทั้งพอร์ต 5432 (Direct) และ 6543 (Pooler) พร้อมเปิดใช้งาน SSL ข้ามการตรวจสอบใบรับรองบน Render
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -16,7 +15,8 @@ const pool = new Pool({
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// ใช้โฟลเดอร์หลักปัจจุบันเป็นที่เก็บไฟล์ Static (เช่น index.html, CSS, JS)
+app.use(express.static(path.join(__dirname)));
 
 // ทดสอบการเชื่อมต่อฐานข้อมูลตอนเริ่มเซิร์ฟเวอร์
 pool.connect((err, client, release) => {
@@ -76,9 +76,9 @@ app.post('/api/passports', async (req, res) => {
   }
 });
 
-// เสิร์ฟหน้าหลัก index.html
+// เสิร์ฟหน้า index.html หลัก
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(port, () => {
