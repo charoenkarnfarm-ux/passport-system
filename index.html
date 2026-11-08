@@ -6,6 +6,8 @@
     <title>ระบบจัดการพาสปอร์ตและเอกสารแรงงาน - บริษัท เจริญการฟาร์ม จำกัด</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- นำเข้า Supabase JS Client สำหรับจัดการ Storage -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style> 
         body { font-family: 'Prompt', sans-serif; } 
@@ -136,8 +138,9 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-gray-600 mb-1">เส้นทางรูปภาพ (Photo URL):</label>
-                    <input type="text" id="add_photo_url" class="w-full p-2.5 border rounded-lg font-mono text-xs" placeholder="images/photo.jpg">
+                    <label class="block text-gray-600 mb-1">อัปโหลดรูปภาพพาสปอร์ต/บัตร (เก็บเข้า Supabase Storage):</label>
+                    <input type="file" id="add_image_file" accept="image/*" class="w-full p-2 border rounded-lg text-xs bg-gray-50 mb-1">
+                    <input type="hidden" id="add_photo_url">
                 </div>
                 <div class="border-t pt-3 mt-3">
                     <h4 class="font-bold text-gray-700 mb-2 text-xs uppercase">📅 ข้อมูลวันหมดอายุเอกสารต่างๆ (พิมพ์รูปแบบ เช่น 29/11/2569)</h4>
@@ -218,8 +221,9 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-gray-600 mb-1">เส้นทางรูปภาพ (Photo URL):</label>
-                    <input type="text" id="edit_photo_url" class="w-full p-2.5 border rounded-lg font-mono text-xs">
+                    <label class="block text-gray-600 mb-1">เปลี่ยนรูปภาพ (อัปโหลดใหม่เข้า Supabase Storage):</label>
+                    <input type="file" id="edit_image_file" accept="image/*" class="w-full p-2 border rounded-lg text-xs bg-gray-50 mb-1">
+                    <input type="hidden" id="edit_photo_url">
                 </div>
                 <div class="border-t pt-3 mt-3">
                     <h4 class="font-bold text-gray-700 mb-2 text-xs uppercase">📅 ข้อมูลวันหมดอายุเอกสารต่างๆ (พิมพ์รูปแบบ เช่น 29/11/2569)</h4>
@@ -338,10 +342,6 @@
             <h3 class="text-lg font-bold text-gray-900 mb-2">📷 สแกนบาร์โค้ด / QR Code</h3>
             <p class="text-xs text-gray-500 mb-3">วางบาร์โค้ดให้อยู่ในกรอบสี่เหลี่ยม</p>
             
-            <div id="cameraSelectionContainer" class="mb-3 hidden">
-                <select id="cameraSelect" onchange="changeCamera()" class="w-full p-2 border rounded-lg text-xs"></select>
-            </div>
-
             <div id="reader" class="w-full rounded-lg overflow-hidden border border-gray-200 bg-black"></div>
             
             <div class="mt-4 flex gap-2">
@@ -351,10 +351,41 @@
     </div>
 
     <script>
-        // 🟢 แก้ไขตรงนี้ให้เป็นเส้นทางสั้น เพื่อรองรับ HTTPS บน Render.com
         const API_URL = '/api';
         let allPassportsData = [];
         let html5QrCode = null;
+
+        // 🟢 ตั้งค่าเชื่อมต่อ Supabase Storage (ใส่ Supabase URL และ Anon Key ของคุณ)
+        const SUPABASE_URL = 'https://tdwcsmvqufvbotzbssuq.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // แทนที่ด้วย Anon Key ของคุณ
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ฟังก์ชันอัปโหลดรูปภาพเข้า Supabase Storage
+        async function uploadImageToSupabase(fileInputId) {
+            const fileInput = document.getElementById(fileInputId);
+            if (!fileInput.files || fileInput.files.length === 0) return null;
+
+            const file = fileInput.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { data, error } = await supabaseClient.storage
+                .from('passports')
+                .upload(filePath, file);
+
+            if (error) {
+                console.error('Upload error:', error);
+                alert('อัปโหลดรูปภาพไม่สำเร็จ: ' + error.message);
+                return null;
+            }
+
+            const { data: publicUrlData } = supabaseClient.storage
+                .from('passports')
+                .getPublicUrl(filePath);
+
+            return publicUrlData.publicUrl;
+        }
 
         async function fetchPassports() {
             try {
@@ -507,6 +538,8 @@
 
         async function submitAdd(event) {
             event.preventDefault();
+            let photoUrl = await uploadImageToSupabase('add_image_file');
+
             const data = {
                 emp_name: document.getElementById('add_emp_name').value,
                 emp_code: document.getElementById('add_emp_code').value,
@@ -521,7 +554,7 @@
                 birth_date: document.getElementById('add_birth_date').value,
                 social_security_no: document.getElementById('add_social_security_no').value,
                 storage_location: document.getElementById('add_storage_location').value,
-                photo_url: document.getElementById('add_photo_url').value
+                photo_url: photoUrl || ''
             };
 
             try {
@@ -570,6 +603,10 @@
         async function submitEdit(event) {
             event.preventDefault();
             const id = document.getElementById('edit_id').value;
+            
+            let newPhotoUrl = await uploadImageToSupabase('edit_image_file');
+            let photoUrl = newPhotoUrl || document.getElementById('edit_photo_url').value;
+
             const data = {
                 emp_name: document.getElementById('edit_emp_name').value,
                 emp_code: document.getElementById('edit_emp_code').value,
@@ -584,7 +621,7 @@
                 birth_date: document.getElementById('edit_birth_date').value,
                 social_security_no: document.getElementById('edit_social_security_no').value,
                 storage_location: document.getElementById('edit_storage_location').value,
-                photo_url: document.getElementById('edit_photo_url').value
+                photo_url: photoUrl
             };
 
             try {
@@ -718,6 +755,7 @@
             modal.classList.add('hidden');
         }
 
+        // ฟังก์ชันเปิดกล้องสแกน (บังคับใช้กล้องหลัง Environment ทันที ป้องกันการสลับกล้องผิดพลาด)
         async function startScanner() {
             const modal = document.getElementById('scannerModal');
             modal.classList.remove('hidden');
@@ -726,27 +764,22 @@
             html5QrCode = new Html5Qrcode("reader");
             
             try {
-                const devices = await Html5Qrcode.getCameras();
-                if (devices && devices.length) {
-                    let cameraId = devices[devices.length - 1].id; 
-                    
-                    await html5QrCode.start(
-                        cameraId,
-                        { fps: 15, qrbox: { width: 280, height: 120 } },
-                        (decodedText) => {
-                            document.getElementById('searchBox').value = decodedText;
-                            filterTable();
-                            stopScanner();
-                        },
-                        (errorMessage) => {}
-                    );
-                } else {
-                    alert("ไม่พบกล้องในอุปกรณ์นี้");
-                    stopScanner();
-                }
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { 
+                        fps: 15, 
+                        qrbox: { width: 300, height: 150 } 
+                    },
+                    (decodedText) => {
+                        document.getElementById('searchBox').value = decodedText;
+                        filterTable();
+                        stopScanner();
+                    },
+                    (errorMessage) => {}
+                );
             } catch (err) {
                 console.error("Scanner error:", err);
-                alert("ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบสิทธิ์การใช้งานกล้องในเบราว์เซอร์");
+                alert("ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบสิทธิ์การใช้งานกล้องในเบราว์เซอร์หรือใช้งานผ่าน HTTPS");
                 stopScanner();
             }
         }
