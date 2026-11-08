@@ -15,6 +15,7 @@ const pool = new Pool({
 
 // Middleware
 app.use(express.json());
+// ใช้โฟลเดอร์หลักปัจจุบันเป็นที่เก็บไฟล์ Static (เช่น index.html, CSS, JS)
 app.use(express.static(path.join(__dirname)));
 
 // ทดสอบการเชื่อมต่อฐานข้อมูลตอนเริ่มเซิร์ฟเวอร์
@@ -29,10 +30,10 @@ pool.connect((err, client, release) => {
 
 // ================= API Endpoints =================
 
-// 1. ดึงข้อมูลพาสปอร์ตทั้งหมด (GET /api/passports)
+// 1. ดึงข้อมูลพาสปอร์ตทั้งหมด (เรียงตามรหัสพนักงาน emp_code จากน้อยไปมาก)
 app.get('/api/passports', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM passports ORDER BY id DESC');
+    const result = await pool.query('SELECT * FROM passports ORDER BY emp_code ASC');
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching passports:', err);
