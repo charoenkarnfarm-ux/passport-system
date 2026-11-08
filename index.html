@@ -29,7 +29,7 @@
                 <button onclick="openReportModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-sm">
                     📊 รายงาน & แจ้งเตือน
                 </button>
-                <span class="text-sm bg-indigo-600 px-3 py-1.5 rounded-full hidden lg:inline">HR Admin</span>
+                <span class="text-sm bg-indigo-600 px-3 py-1.5 rounded-full hidden lg:inline">บริษัท เจริญการฟาร์ม จำกัด</span>
             </div>
         </div>
     </header>
@@ -46,8 +46,14 @@
                     📷 เปิดกล้องสแกน
                 </button>
             </div>
-            <div class="text-sm font-medium text-gray-600 bg-indigo-50 px-4 py-3 rounded-lg border border-indigo-100 w-full md:w-auto text-center" id="totalCount">
-                กำลังโหลดข้อมูล...
+            <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto justify-end">
+                <!-- ปุ่มแจ้งเตือนพาสปอร์ตที่ถูกยืมออกไป (ไม่อยู่ในตู้) -->
+                <button onclick="openBorrowedModal()" id="borrowedAlertBtn" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 px-4 py-3 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 shadow-sm">
+                    📤 พาสปอร์ตไม่อยู่ในตู้: <span id="borrowedCountBadge" class="bg-amber-600 text-white px-2 py-0.5 rounded-full text-xs font-bold">0 คน</span>
+                </button>
+                <div class="text-sm font-medium text-gray-600 bg-indigo-50 px-4 py-3 rounded-lg border border-indigo-100 text-center flex items-center justify-center" id="totalCount">
+                    กำลังโหลดข้อมูล...
+                </div>
             </div>
         </div>
 
@@ -69,6 +75,32 @@
             </div>
         </div>
     </main>
+
+    <!-- Modal แจ้งเตือนพาสปอร์ตที่ไม่ได้อยู่ในตู้ (ถูกยืมออกไป) -->
+    <div id="borrowedAlertModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b mb-4">
+                <h3 class="text-lg font-bold text-amber-700">📤 รายชื่อพาสปอร์ตที่ไม่ได้อยู่ในตู้เก็บเอกสาร (ถูกยืมออกไป)</h3>
+                <button onclick="closeBorrowedModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
+            </div>
+            <div class="border rounded-xl overflow-hidden mb-4">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
+                        <tr>
+                            <th class="p-3">พนักงาน</th>
+                            <th class="p-3">เลขพาสปอร์ต</th>
+                            <th class="p-3">ตำแหน่งที่เก็บเดิม</th>
+                            <th class="p-3 text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="borrowedAlertTableBody" class="divide-y divide-gray-200 text-xs"></tbody>
+                </table>
+            </div>
+            <div class="text-center">
+                <button onclick="closeBorrowedModal()" class="bg-gray-200 text-gray-700 py-2.5 px-6 rounded-xl hover:bg-gray-300 font-medium transition">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal แจ้งเตือนอัตโนมัติเมื่อเปิดโปรแกรม -->
     <div id="startupAlertModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-50">
@@ -392,11 +424,58 @@
                 const res = await fetch(`${API_URL}/passports`);
                 allPassportsData = await res.json();
                 renderTable(allPassportsData);
+                updateBorrowedAlertBadge(allPassportsData);
                 checkStartupAlerts(allPassportsData);
             } catch (err) {
                 console.error("Failed to load passports", err);
                 document.getElementById('totalCount').innerText = "⚠️ ไม่สามารถเชื่อมต่อกับ Server ได้";
             }
+        }
+
+        // ฟังก์ชันอัปเดตตัวเลขแจ้งเตือนพาสปอร์ตที่ไม่ได้อยู่ในตู้
+        function updateBorrowedAlertBadge(data) {
+            const borrowedItems = data.filter(item => item.status !== 'Available');
+            const badge = document.getElementById('borrowedCountBadge');
+            badge.innerText = `${borrowedItems.length} คน`;
+            
+            if (borrowedItems.length > 0) {
+                document.getElementById('borrowedAlertBtn').classList.remove('hidden');
+            }
+        }
+
+        // เปิด Modal แสดงรายชื่อพาสปอร์ตที่ไม่อยู่ในตู้
+        function openBorrowedModal() {
+            const modal = document.getElementById('borrowedAlertModal');
+            const tbody = document.getElementById('borrowedAlertTableBody');
+            tbody.innerHTML = '';
+
+            const borrowedItems = allPassportsData.filter(item => item.status !== 'Available');
+
+            borrowedItems.forEach(item => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-2 font-medium">${item.emp_name}<br><span class="text-xs text-gray-500">${item.emp_code || '-'}</span></td>
+                        <td class="p-2 font-mono">${item.passport_no}</td>
+                        <td class="p-2 text-indigo-600">📍 ${item.storage_location || 'ยังไม่ระบุ'}</td>
+                        <td class="p-2 text-center">
+                            <button onclick="closeBorrowedModal(); returnItem(${item.id})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs transition">รับคืนเข้าตู้</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (borrowedItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-500">พาสปอร์ตทุกเล่มอยู่ในตู้เก็บเอกสารครบถ้วน</td></tr>`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeBorrowedModal() {
+            const modal = document.getElementById('borrowedAlertModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
         }
 
         function formatText(val) {
@@ -771,7 +850,6 @@
                         qrbox: { width: 300, height: 150 } 
                     },
                     async (decodedText) => {
-                        // ตัดช่องว่างและอักขระพิเศษออกทันที
                         const cleanedText = decodedText.trim();
                         document.getElementById('searchBox').value = cleanedText;
                         await filterTable();
@@ -832,7 +910,6 @@
             }
         }
 
-        // ฟังก์ชันค้นหาพร้อมตรวจสอบข้อมูลให้พร้อมใช้งานเสมอ
         async function filterTable() {
             if (!allPassportsData || allPassportsData.length === 0) {
                 try {
