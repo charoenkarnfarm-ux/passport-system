@@ -13,12 +13,12 @@ const pool = new Pool({
   }
 });
 
-// Middleware สำหรับอ่านค่า JSON และเปิดใช้งานไฟล์สแตติก (HTML, รูปภาพ ฯลฯ)
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname)));
 
-// ตัวอย่าง API ดึงข้อมูลพาสปอร์ตทั้งหมดจากตาราง passports
+// API ดึงข้อมูลพาสปอร์ตทั้งหมด
 app.get('/api/passports', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM passports ORDER BY id DESC');
@@ -29,7 +29,7 @@ app.get('/api/passports', async (req, res) => {
   }
 });
 
-// ตัวอย่าง API เพิ่มข้อมูลพาสปอร์ต
+// API เพิ่มข้อมูลพาสปอร์ต
 app.post('/api/passports', async (req, res) => {
   const { passport_no, holder_name, expiry_date } = req.body;
   try {

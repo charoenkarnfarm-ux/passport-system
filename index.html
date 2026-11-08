@@ -3,816 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดการพาสปอร์ตและเอกสารแรงงาน - บริษัท เจริญการฟาร์ม จำกัด</title>
+    <title>ระบบยืม-คืนพาสปอร์ตและติดตามเอกสารแรงงาน</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <style> 
-        body { font-family: 'Prompt', sans-serif; } 
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white !important; }
-            .print-container { width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; }
-        }
-    </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
-    <header class="bg-indigo-700 text-white shadow-md no-print">
-        <div class="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-3">
-            <h1 class="text-xl font-semibold">🛂 ระบบยืม-คืนพาสปอร์ตและติดตามเอกสารแรงงาน</h1>
-            <div class="flex items-center gap-2">
-                <button onclick="openAddModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-sm">
-                    ➕ เพิ่มพนักงานใหม่
-                </button>
-                <button onclick="openReportModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-sm">
-                    📊 รายงาน & แจ้งเตือน
-                </button>
-                <span class="text-sm bg-indigo-600 px-3 py-1.5 rounded-full hidden lg:inline">HR Admin</span>
+<body class="bg-gray-50 min-h-screen">
+    <!-- ส่วนหัวเว็บไซต์ -->
+    <header class="bg-indigo-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold">ระบบยืม-คืนพาสปอร์ตและติดตามเอกสารแรงงาน</h1>
+            <div id="connection-status" class="bg-amber-500 text-white text-xs px-3 py-1 rounded-full">
+                กำลังเชื่อมต่อ Server...
             </div>
         </div>
     </header>
 
-    <main class="container mx-auto px-6 py-8">
-        <!-- ช่องค้นหาและปุ่มเปิดกล้องสแกน -->
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
-            <div class="w-full md:w-3/5 relative flex items-center gap-2">
-                <div class="relative w-full">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">🔍</span>
-                    <input type="text" id="searchBox" onkeyup="filterTable()" placeholder="สแกนบาร์โค้ด / พิมพ์ชื่อพนักงาน, กลุ่ม, หรือที่เก็บ..." class="w-full pl-10 pr-4 py-3 border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base shadow-inner">
-                </div>
-                <button onclick="startScanner()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap shadow-sm">
-                    📷 เปิดกล้องสแกน
-                </button>
-            </div>
-            <div class="text-sm font-medium text-gray-600 bg-indigo-50 px-4 py-3 rounded-lg border border-indigo-100 w-full md:w-auto text-center" id="totalCount">
-                กำลังโหลดข้อมูล...
-            </div>
-        </div>
-
-        <!-- ตารางแสดงรายการ -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <!-- เนื้อหาหลัก -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700">รายชื่อพาสปอร์ตทั้งหมด</h2>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse" id="passportTable">
-                    <thead>
-                        <tr class="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
-                            <th class="py-3.5 px-4">พนักงาน / รูปบัตร</th>
-                            <th class="py-3.5 px-4">เลขพาสปอร์ต / ที่เก็บ / กลุ่ม</th>
-                            <th class="py-3.5 px-4">วันหมดอายุเอกสารหลัก (เล่ม / วีซ่า / WP / บัตรชมพู)</th>
-                            <th class="py-3.5 px-4">สถานะปัจจุบัน</th>
-                            <th class="py-3.5 px-4 text-center no-print">จัดการ</th>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">พนักงาน / รูปบัตร</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เลขพาสปอร์ต / ที่เก็บ</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันหมดอายุเอกสารหลัก</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะปัจจุบัน</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="passportTableBody" class="divide-y divide-gray-200 text-sm"></tbody>
+                    <tbody id="passport-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- ข้อมูลจะถูกโหลดมาแสดงที่นี่ผ่าน JavaScript -->
+                    </tbody>
                 </table>
             </div>
         </div>
     </main>
 
-    <!-- Modal แจ้งเตือนอัตโนมัติเมื่อเปิดโปรแกรม (Popup ล่วงหน้า 10 วัน) -->
-    <div id="startupAlertModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-center">
-            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">⚠️</div>
-            <h3 class="text-lg font-bold text-gray-900 mb-1">แจ้งเตือนเอกสารใกล้หมดอายุ (ภายใน 10 วัน)</h3>
-            <p class="text-xs text-gray-500 mb-4">สรุปรายการเอกสารที่ต้องดำเนินการเร่งด่วน</p>
-            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 text-left mb-5 space-y-2 text-sm">
-                <div class="flex justify-between items-center text-red-600 font-medium">
-                    <span>🚨 เอกสารหมดอายุแล้ว / ถึงกำหนด:</span>
-                    <span id="popupExpiredText" class="font-bold">0 คน</span>
-                </div>
-                <div class="flex justify-between items-center text-amber-600 font-medium">
-                    <span>⚠️ ใกล้หมดอายุ (ภายใน 10 วัน):</span>
-                    <span id="popupNearText" class="font-bold">0 คน</span>
-                </div>
-            </div>
-            <div class="flex gap-3">
-                <button onclick="closeStartupAlert()" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-xl hover:bg-gray-300 font-medium transition">ปิดหน้าต่าง</button>
-                <button onclick="closeStartupAlert(); openReportModal();" class="w-1/2 bg-indigo-600 text-white py-2.5 rounded-xl hover:bg-indigo-700 font-medium transition shadow-sm">ดูรายละเอียดทั้งหมด</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal เพิ่มพนักงานใหม่ -->
-    <div id="addModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onclick="closeAddModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
-            <h3 class="text-lg font-bold text-gray-900 mb-4">➕ เพิ่มข้อมูลพนักงานและเอกสารใหม่</h3>
-            <form id="addForm" onsubmit="submitAdd(event)" class="space-y-3 text-sm">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-gray-600 mb-1">ชื่อ-นามสกุล:*</label>
-                        <input type="text" id="add_emp_name" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500" required>
-                    </div>
-                    <div>
-                        <label class="block text-gray-600 mb-1">เลขพาสปอร์ต / บัตร:*</label>
-                        <input type="text" id="add_passport_no" class="w-full p-2.5 border rounded-lg font-mono" required>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-gray-600 mb-1">รหัสพนักงาน:</label>
-                        <input type="text" id="add_emp_code" class="w-full p-2.5 border rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-gray-600 mb-1">แผนก / สังกัด:</label>
-                        <input type="text" id="add_department" class="w-full p-2.5 border rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-gray-600 mb-1">กลุ่มพนักงาน (มติ ครม.):</label>
-                        <input type="text" id="add_emp_group" class="w-full p-2.5 border rounded-lg" placeholder="เช่น มติ 24 ก.พ. 68">
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-gray-600 mb-1">วัน เดือน ปี เกิด:</label>
-                        <input type="text" id="add_birth_date" class="w-full p-2.5 border rounded-lg text-xs" placeholder="เช่น 15/08/2540">
-                    </div>
-                    <div>
-                        <label class="block text-gray-600 mb-1">เลขประกันสังคม:</label>
-                        <input type="text" id="add_social_security_no" class="w-full p-2.5 border rounded-lg font-mono">
-                    </div>
-                    <div>
-                        <label class="block text-gray-600 mb-1">ตำแหน่งที่เก็บเอกสาร:</label>
-                        <input type="text" id="add_storage_location" class="w-full p-2.5 border rounded-lg text-xs" placeholder="เช่น ตู้เซฟชั้น 1">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-gray-600 mb-1">เส้นทางรูปภาพ (Photo URL):</label>
-                    <input type="text" id="add_photo_url" class="w-full p-2.5 border rounded-lg font-mono text-xs" placeholder="images/photo.jpg">
-                </div>
-                <div class="border-t pt-3 mt-3">
-                    <h4 class="font-bold text-gray-700 mb-2 text-xs uppercase">📅 ข้อมูลวันหมดอายุเอกสารต่างๆ (พิมพ์รูปแบบ เช่น 29/11/2569)</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        <div>
-                            <label class="block text-gray-600 mb-1 text-xs">หมดอายุพาสปอร์ต:</label>
-                            <input type="text" id="add_expiry_date" class="w-full p-2 border rounded-lg text-xs" placeholder="29/11/2569">
-                        </div>
-                        <div>
-                            <label class="block text-gray-600 mb-1 text-xs">หมดอายุวีซ่า:</label>
-                            <input type="text" id="add_visa_expiry" class="w-full p-2 border rounded-lg text-xs" placeholder="12/02/2570">
-                        </div>
-                        <div>
-                            <label class="block text-gray-600 mb-1 text-xs">หมดอายุ Work Permit:</label>
-                            <input type="text" id="add_work_permit_expiry" class="w-full p-2 border rounded-lg text-xs" placeholder="12/02/2570">
-                        </div>
-                        <div>
-                            <label class="block text-gray-600 mb-1 text-xs">หมดอายุบัตรชมพู:</label>
-                            <input type="text" id="add_pink_card_expiry" class="w-full p-2 border rounded-lg text-xs" placeholder="22/04/2579">
-                        </div>
-                        <div>
-                            <label class="block text-gray-600 mb-1 text-xs">ครบกำหนดรายงาน 90 วัน:</label>
-                            <input type="text" id="add_ninety_day_expiry" class="w-full p-2 border rounded-lg text-xs" placeholder="18/01/2570">
-                        </div>
-                    </div>
-                </div>
-                <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="closeAddModal()" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-xl hover:bg-gray-300 font-medium transition">ยกเลิก</button>
-                    <button type="submit" class="w-1/2 bg-emerald-600 text-white py-2.5 rounded-xl hover:bg-emerald-700 font-medium transition shadow-sm">บันทึกเพิ่มพนักงาน</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal แก้ไขข้อมูลพนักงาน -->
-    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onclick="closeEditModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
-            <h3 class="text-lg font-bold text-gray-900 mb-4">✏️ แก้ไขข้อมูลพนักงานและเอกสาร</h3>
-            <form id="editForm" onsubmit="submitEdit(event)" class="space-y-3 text-sm">
-                <input type="hidden" id="edit_id">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-gray-600 mb-1">ชื่อ-นามสกุล:*</label>
-                        <input type="text" id="edit_emp_name" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500" required>
-                    </div>
-                    <div>
-                        <label class="block text-gray-600 mb-1">เลขพาสปอร์ต / บัตร:*</label>
-                        <input type="text" id="edit_passport_no" class="w-full p-2.5 border rounded-lg font-mono" required>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-gray-600 mb-1">รหัสพนักงาน:</label>
-                        <input type="text" id="edit_emp_code" class="w-full p-2.5 border rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-gray-600 mb-1">แผนก / สังกัด:</label>
-                        <input type="text" id="edit_department" class="w-full p-2.5 border rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-gray-600 mb-1">กลุ่มพนักงาน (มติ ครม.):</label>
-                        <input type="text" id="edit_emp_group" class="w-full p-2.5 border rounded-lg">
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-gray-600 mb-1">วัน เดือน ปี เกิด:</label>
-                        <input type="text" id="edit_birth_date" class="w-full p-2.5 border rounded-lg text-xs">
-                    </div>
-                    <div>
-                        <label class="block text-gray-600 mb-1">เลขประกันสังคม:</label>
-                        <input type="text" id="edit_social_security_no" class="w-full p-2.5 border rounded-lg font-mono">
-                    </div>
-                    <div>
-                        <label class="block text-gray-600 mb-1">ตำแหน่งที่เก็บเอกสาร:</label>
-                        <input type="text" id="edit_storage_location" class="w-full p-2.5 border rounded-lg text-xs">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-gray-600 mb-1">เส้นทางรูปภาพ (Photo URL):</label>
-                    <input type="text" id="edit_photo_url" class="w-full p-2.5 border rounded-lg font-mono text-xs">
-                </div>
-                <div class="border-t pt-3 mt-3">
-                    <h4 class="font-bold text-gray-700 mb-2 text-xs uppercase">📅 ข้อมูลวันหมดอายุเอกสารต่างๆ (พิมพ์รูปแบบ เช่น 29/11/2569)</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        <div>
-                            <label class="block text-gray-600 mb-1 text-xs">หมดอายุพาสปอร์ต:</label>
-                            <input type="text" id="edit_expiry_date" class="w-full p-2 border rounded-lg text-xs">
-                        </div>
-                        <div>
-                            <label class="block text-gray-600 mb-1 text-xs">หมดอายุวีซ่า:</label>
-                            <input type="text" id="edit_visa_expiry" class="w-full p-2 border rounded-lg text-xs">
-                        </div>
-                        <div>
-                            <label class="block text-gray-600 mb-1 text-xs">หมดอายุ Work Permit:</label>
-                            <input type="text" id="edit_work_permit_expiry" class="w-full p-2 border rounded-lg text-xs">
-                        </div>
-                        <div>
-                            <label class="block text-gray-600 mb-1 text-xs">หมดอายุบัตรชมพู:</label>
-                            <input type="text" id="edit_pink_card_expiry" class="w-full p-2 border rounded-lg text-xs">
-                        </div>
-                        <div>
-                            <label class="block text-gray-600 mb-1 text-xs">ครบกำหนดรายงาน 90 วัน:</label>
-                            <input type="text" id="edit_ninety_day_expiry" class="w-full p-2 border rounded-lg text-xs">
-                        </div>
-                    </div>
-                </div>
-                <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="closeEditModal()" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-xl hover:bg-gray-300 font-medium transition">ยกเลิก</button>
-                    <button type="submit" class="w-1/2 bg-indigo-600 text-white py-2.5 rounded-xl hover:bg-indigo-700 font-medium transition shadow-sm">บันทึกการแก้ไข</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal รายงาน & แจ้งเตือนเอกสาร -->
-    <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-5xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center pb-4 border-b border-gray-200 mb-4">
-                <div>
-                    <h2 class="text-xl font-bold text-gray-900">📊 รายงานสรุปสถานะและแจ้งเตือนเอกสารแรงงาน</h2>
-                    <p class="text-xs text-gray-500">บริษัท เจริญการฟาร์ม จำกัด</p>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1 shadow-sm">
-                        🖨️ พิมพ์รายงาน
-                    </button>
-                    <button onclick="closeReportModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold px-3">✕</button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="bg-red-50 border border-red-200 p-4 rounded-xl">
-                    <div class="text-red-700 font-bold text-lg" id="alertExpiredCount">0 คน</div>
-                    <div class="text-xs text-red-600 font-medium">🚨 หมดอายุ / ถึงกำหนดแล้ว</div>
-                </div>
-                <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl">
-                    <div class="text-amber-700 font-bold text-lg" id="alertNearExpireCount">0 คน</div>
-                    <div class="text-xs text-amber-600 font-medium">⚠️ ใกล้หมดอายุ (ภายใน 10 วัน)</div>
-                </div>
-                <div class="bg-green-50 border border-green-200 p-4 rounded-xl">
-                    <div class="text-green-700 font-bold text-lg" id="alertNormalCount">0 คน</div>
-                    <div class="text-xs text-green-600 font-medium">✅ สถานะปกติ</div>
-                </div>
-            </div>
-
-            <h3 class="font-bold text-gray-800 mb-3 text-sm">📋 รายชื่อพนักงานและสถานะเอกสาร</h3>
-            <div class="border rounded-xl overflow-hidden mb-6">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-gray-100 text-gray-600 text-xs uppercase">
-                        <tr>
-                            <th class="p-3">พนักงาน</th>
-                            <th class="p-3">เลขพาสปอร์ต / ที่เก็บ / กลุ่ม</th>
-                            <th class="p-3">เล่ม</th>
-                            <th class="p-3">วีซ่า</th>
-                            <th class="p-3">WP</th>
-                            <th class="p-3">บัตรชมพู</th>
-                            <th class="p-3">90 วัน</th>
-                            <th class="p-3">สถานะ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportAlertTableBody" class="divide-y divide-gray-200 text-xs"></tbody>
-                </table>
-            </div>
-
-            <div class="text-center">
-                <button onclick="closeReportModal()" class="bg-gray-200 text-gray-700 py-2.5 rounded-xl hover:bg-gray-300 font-medium transition">ปิดหน้าต่าง</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal ข้อมูลส่วนตัวและเอกสารแบบเต็ม -->
-    <div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto print-container">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold no-print">✕</button>
-            <div id="modalContent"></div>
-            <div class="mt-6 flex gap-3 no-print">
-                <button onclick="window.print()" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-medium transition shadow-sm flex items-center justify-center gap-2">
-                    🖨️ พิมพ์ข้อมูลพนักงาน
-                </button>
-                <button onclick="closeModal()" class="w-1/2 bg-gray-200 text-gray-700 py-2.5 rounded-xl hover:bg-gray-300 font-medium transition">ปิดหน้าต่าง</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal ขยายรูปภาพ -->
-    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-80 hidden items-center justify-center p-4 z-50" onclick="closeImageZoom()">
-        <div class="relative max-w-3xl w-full text-center" onclick="event.stopPropagation()">
-            <button onclick="closeImageZoom()" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-3xl font-bold">✕</button>
-            <img id="zoomedImage" src="" alt="Zoomed ID Card" class="max-h-[85vh] mx-auto rounded-xl shadow-2xl border-4 border-white object-contain">
-        </div>
-    </div>
-
-    <!-- Modal กล้องสแกน (ปรับปรุงใหม่ รองรับทุกอุปกรณ์) -->
-    <div id="scannerModal" class="fixed inset-0 bg-black bg-opacity-80 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-center">
-            <h3 class="text-lg font-bold text-gray-900 mb-2">📷 สแกนบาร์โค้ด / QR Code</h3>
-            <p class="text-xs text-gray-500 mb-3">วางบาร์โค้ดให้อยู่ในกรอบสี่เหลี่ยม</p>
-            
-            <!-- ตัวเลือกกล้อง -->
-            <div id="cameraSelectionContainer" class="mb-3 hidden">
-                <select id="cameraSelect" onchange="changeCamera()" class="w-full p-2 border rounded-lg text-xs"></select>
-            </div>
-
-            <div id="reader" class="w-full rounded-lg overflow-hidden border border-gray-200 bg-black"></div>
-            
-            <div class="mt-4 flex gap-2">
-                <button onclick="stopScanner()" class="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl font-medium transition w-full shadow-sm">ปิดกล้อง</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- Script สำหรับดึงข้อมูล API -->
     <script>
-        const API_URL = `http://api/passports`;
-        let allPassportsData = [];
-        let html5QrCode = null;
-
         async function fetchPassports() {
+            const statusBadge = document.getElementById('connection-status');
             try {
-                const res = await fetch(`${API_URL}/passports`);
-                allPassportsData = await res.json();
-                renderTable(allPassportsData);
-                checkStartupAlerts(allPassportsData);
-            } catch (err) {
-                console.error("Failed to load passports", err);
-                document.getElementById('totalCount').innerText = "⚠️ ไม่สามารถเชื่อมต่อกับ Server ได้";
-            }
-        }
-
-        function formatText(val) {
-            return val ? val : '-';
-        }
-
-        function parseDateString(dateStr) {
-            if (!dateStr || typeof dateStr !== 'string') return null;
-            const parts = dateStr.trim().split('/');
-            if (parts.length !== 3) return null;
-            
-            let day = parseInt(parts[0], 10);
-            let month = parseInt(parts[1], 10) - 1;
-            let year = parseInt(parts[2], 10);
-            
-            if (year > 2400) year -= 543;
-            if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-            return new Date(year, month, day);
-        }
-
-        function renderTable(data) {
-            const tbody = document.getElementById('passportTableBody');
-            tbody.innerHTML = '';
-            
-            data.forEach(item => {
-                let photoHtml = item.photo_url 
-                    ? `<img src="${item.photo_url}" alt="ID Card" class="w-16 h-12 rounded object-cover border border-gray-300 shadow-sm cursor-pointer hover:opacity-80 hover:scale-105 transition transform" title="คลิกเพื่อขยายรูปภาพ" onclick='event.stopPropagation(); openImageZoom("${item.photo_url}")'>`
-                    : `<div class="w-16 h-12 rounded bg-indigo-50 text-indigo-500 flex items-center justify-center font-bold text-xs border border-indigo-200 text-center px-1">🪪 ไม่มีรูป</div>`;
-
-                let statusBadge = item.status === 'Available' 
-                    ? '<span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">🛡️ ตู้เก็บเอกสาร</span>'
-                    : '<span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">📤 พนักงานเจ้าของบัตร</span>';
-
-                let actionBtns = item.status === 'Available'
-                    ? `<button onclick="borrowItem(${item.id})" class="text-indigo-600 hover:text-indigo-900 font-medium bg-indigo-50 hover:bg-indigo-100 px-3.5 py-1.5 rounded-lg transition">ยืมเล่ม</button>`
-                    : `<button onclick="returnItem(${item.id})" class="text-green-600 hover:text-green-900 font-medium bg-green-50 hover:bg-green-100 px-3.5 py-1.5 rounded-lg transition">รับคืน</button>`;
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50 transition cursor-pointer" onclick='showDetail(${JSON.stringify(item)})'>
-                        <td class="py-3.5 px-4 flex items-center gap-3">
-                            ${photoHtml}
-                            <div>
-                                <div class="font-medium text-gray-950 hover:text-indigo-600">${item.emp_name}</div>
-                                <div class="text-xs text-gray-500">${item.emp_code || '-'} • ${item.department || '-'}</div>
-                            </div>
-                        </td>
-                        <td class="py-3.5 px-4">
-                            <div class="font-mono text-gray-700 font-medium">${item.passport_no}</div>
-                            <div class="text-xs text-indigo-600 font-medium mt-0.5">📍 ที่เก็บ: ${item.storage_location || 'ยังไม่ระบุ'}</div>
-                            <div class="text-xs text-purple-600 font-medium">🏷️ กลุ่ม: ${item.emp_group || 'ทั่วไป'}</div>
-                        </td>
-                        <td class="py-3.5 px-4 text-xs text-gray-600">
-                            <div>📖 เล่ม: <span class="font-medium">${formatText(item.expiry_date)}</span></div>
-                            <div>🪪 วีซ่า: <span class="font-medium">${formatText(item.visa_expiry)}</span></div>
-                            <div>📝 WP: <span class="font-medium">${formatText(item.work_permit_expiry)}</span></div>
-                            <div>💳 บัตรชมพู: <span class="font-medium">${formatText(item.pink_card_expiry)}</span></div>
-                        </td>
-                        <td class="py-3.5 px-4">${statusBadge}</td>
-                        <td class="py-3.5 px-4 text-center space-x-2 no-print" onclick="event.stopPropagation()">
-                            ${actionBtns}
-                            <button onclick='openEditModal(${JSON.stringify(item)})' class="text-gray-600 hover:text-gray-900 font-medium bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition">แก้ไข</button>
-                        </td>
-                    </tr>`;
-            });
-            document.getElementById('totalCount').innerText = `📊 พนักงานทั้งหมด ${data.length} คน`;
-        }
-
-        function checkStartupAlerts(data) {
-            let expiredCount = 0;
-            let nearExpireCount = 0;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            data.forEach(item => {
-                const dates = [
-                    parseDateString(item.expiry_date),
-                    parseDateString(item.visa_expiry),
-                    parseDateString(item.work_permit_expiry),
-                    parseDateString(item.pink_card_expiry),
-                    parseDateString(item.ninety_day_expiry)
-                ];
-
-                let isExpired = false;
-                let isNear = false;
-
-                dates.forEach(d => {
-                    if (d) {
-                        const diffDays = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
-                        if (diffDays < 0) isExpired = true;
-                        else if (diffDays <= 10) isNear = true;
-                    }
-                });
-
-                if (isExpired) expiredCount++;
-                else if (isNear) nearExpireCount++;
-            });
-
-            if (expiredCount > 0 || nearExpireCount > 0) {
-                document.getElementById('popupExpiredText').innerText = `${expiredCount} คน`;
-                document.getElementById('popupNearText').innerText = `${nearExpireCount} คน`;
-                
-                const modal = document.getElementById('startupAlertModal');
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-        }
-
-        function closeStartupAlert() {
-            const modal = document.getElementById('startupAlertModal');
-            modal.classList.remove('flex');
-            modal.classList.add('hidden');
-        }
-
-        function openImageZoom(imgUrl) {
-            document.getElementById('zoomedImage').src = imgUrl;
-            const modal = document.getElementById('imageModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeImageZoom() {
-            const modal = document.getElementById('imageModal');
-            modal.classList.remove('flex');
-            modal.classList.add('hidden');
-        }
-
-        function openAddModal() {
-            document.getElementById('addForm').reset();
-            const modal = document.getElementById('addModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeAddModal() {
-            const modal = document.getElementById('addModal');
-            modal.classList.remove('flex');
-            modal.classList.add('hidden');
-        }
-
-        async function submitAdd(event) {
-            event.preventDefault();
-            const data = {
-                emp_name: document.getElementById('add_emp_name').value,
-                emp_code: document.getElementById('add_emp_code').value,
-                department: document.getElementById('add_department').value,
-                emp_group: document.getElementById('add_emp_group').value,
-                passport_no: document.getElementById('add_passport_no').value,
-                expiry_date: document.getElementById('add_expiry_date').value,
-                visa_expiry: document.getElementById('add_visa_expiry').value,
-                work_permit_expiry: document.getElementById('add_work_permit_expiry').value,
-                pink_card_expiry: document.getElementById('add_pink_card_expiry').value,
-                ninety_day_expiry: document.getElementById('add_ninety_day_expiry').value,
-                birth_date: document.getElementById('add_birth_date').value,
-                social_security_no: document.getElementById('add_social_security_no').value,
-                storage_location: document.getElementById('add_storage_location').value,
-                photo_url: document.getElementById('add_photo_url').value
-            };
-
-            try {
-                const res = await fetch(`${API_URL}/passports`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await res.json();
-                alert(result.message);
-                closeAddModal();
-                fetchPassports();
-            } catch (err) {
-                alert("เกิดข้อผิดพลาดในการบันทึกพนักงานใหม่");
-            }
-        }
-
-        function openEditModal(item) {
-            document.getElementById('edit_id').value = item.id;
-            document.getElementById('edit_emp_name').value = item.emp_name || '';
-            document.getElementById('edit_emp_code').value = item.emp_code || '';
-            document.getElementById('edit_department').value = item.department || '';
-            document.getElementById('edit_emp_group').value = item.emp_group || '';
-            document.getElementById('edit_passport_no').value = item.passport_no || '';
-            document.getElementById('edit_expiry_date').value = item.expiry_date || '';
-            document.getElementById('edit_visa_expiry').value = item.visa_expiry || '';
-            document.getElementById('edit_work_permit_expiry').value = item.work_permit_expiry || '';
-            document.getElementById('edit_pink_card_expiry').value = item.pink_card_expiry || '';
-            document.getElementById('edit_ninety_day_expiry').value = item.ninety_day_expiry || '';
-            document.getElementById('edit_birth_date').value = item.birth_date || '';
-            document.getElementById('edit_social_security_no').value = item.social_security_no || '';
-            document.getElementById('edit_storage_location').value = item.storage_location || '';
-            document.getElementById('edit_photo_url').value = item.photo_url || '';
-
-            const modal = document.getElementById('editModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeEditModal() {
-            const modal = document.getElementById('editModal');
-            modal.classList.remove('flex');
-            modal.classList.add('hidden');
-        }
-
-        async function submitEdit(event) {
-            event.preventDefault();
-            const id = document.getElementById('edit_id').value;
-            const data = {
-                emp_name: document.getElementById('edit_emp_name').value,
-                emp_code: document.getElementById('edit_emp_code').value,
-                department: document.getElementById('edit_department').value,
-                emp_group: document.getElementById('edit_emp_group').value,
-                passport_no: document.getElementById('edit_passport_no').value,
-                expiry_date: document.getElementById('edit_expiry_date').value,
-                visa_expiry: document.getElementById('edit_visa_expiry').value,
-                work_permit_expiry: document.getElementById('edit_work_permit_expiry').value,
-                pink_card_expiry: document.getElementById('edit_pink_card_expiry').value,
-                ninety_day_expiry: document.getElementById('edit_ninety_day_expiry').value,
-                birth_date: document.getElementById('edit_birth_date').value,
-                social_security_no: document.getElementById('edit_social_security_no').value,
-                storage_location: document.getElementById('edit_storage_location').value,
-                photo_url: document.getElementById('edit_photo_url').value
-            };
-
-            try {
-                const res = await fetch(`${API_URL}/passports/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await res.json();
-                alert(result.message);
-                closeEditModal();
-                fetchPassports();
-            } catch (err) {
-                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-            }
-        }
-
-        function openReportModal() {
-            const modal = document.getElementById('reportModal');
-            const tbody = document.getElementById('reportAlertTableBody');
-            tbody.innerHTML = '';
-
-            let expiredCount = 0;
-            let nearExpireCount = 0;
-            let normalCount = 0;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            allPassportsData.forEach(item => {
-                const dates = [
-                    parseDateString(item.expiry_date),
-                    parseDateString(item.visa_expiry),
-                    parseDateString(item.work_permit_expiry),
-                    parseDateString(item.pink_card_expiry),
-                    parseDateString(item.ninety_day_expiry)
-                ];
-
-                let alertStatus = 'normal';
-                let alertBadge = '<span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full font-medium">✅ ปกติ</span>';
-
-                dates.forEach(d => {
-                    if (d) {
-                        const diffDays = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
-                        if (diffDays < 0) {
-                            alertStatus = 'expired';
-                            alertBadge = '<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full font-medium">🚨 หมดอายุ</span>';
-                        } else if (diffDays <= 10 && alertStatus !== 'expired') {
-                            alertStatus = 'near';
-                            alertBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-medium">⚠️ ใกล้ (${diffDays}วัน)</span>`;
-                        }
-                    }
-                });
-
-                if (alertStatus === 'expired') expiredCount++;
-                else if (alertStatus === 'near') nearExpireCount++;
-                else normalCount++;
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-2 font-medium">${item.emp_name}<br><span class="text-xs text-gray-500">${item.emp_code || '-'}</span></td>
-                        <td class="p-2">
-                            <span class="font-mono text-xs">${item.passport_no}</span><br>
-                            <span class="text-indigo-600 text-[10px]">📍 ${item.storage_location || '-'}</span> | 
-                            <span class="text-purple-600 text-[10px]">🏷️ ${item.emp_group || '-'}</span>
-                        </td>
-                        <td class="p-2 text-xs">${formatText(item.expiry_date)}</td>
-                        <td class="p-2 text-xs">${formatText(item.visa_expiry)}</td>
-                        <td class="p-2 text-xs">${formatText(item.work_permit_expiry)}</td>
-                        <td class="p-2 text-xs">${formatText(item.pink_card_expiry)}</td>
-                        <td class="p-2 text-xs">${formatText(item.ninety_day_expiry)}</td>
-                        <td class="p-2">${alertBadge}</td>
-                    </tr>
-                `;
-            });
-
-            if (tbody.innerHTML === '') {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-500">ไม่มีข้อมูลพนักงาน</td></tr>`;
-            }
-
-            document.getElementById('alertExpiredCount').innerText = `${expiredCount} คน`;
-            document.getElementById('alertNearExpireCount').innerText = `${nearExpireCount} คน`;
-            document.getElementById('alertNormalCount').innerText = `${normalCount} คน`;
-
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeReportModal() {
-            const modal = document.getElementById('reportModal');
-            modal.classList.remove('flex');
-            modal.classList.add('hidden');
-        }
-
-        function showDetail(item) {
-            const modal = document.getElementById('detailModal');
-            const content = document.getElementById('modalContent');
-            
-            let photoHtml = item.photo_url 
-                ? `<img src="${item.photo_url}" alt="ID Card" class="w-36 h-24 rounded-lg object-cover border-2 border-indigo-200 shadow-md mx-auto mb-3 cursor-pointer hover:opacity-90" onclick='openImageZoom("${item.photo_url}")'>`
-                : `<div class="w-36 h-24 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center font-bold text-sm border-2 border-indigo-200 mx-auto mb-3 text-center px-2">🪪 ไม่มีรูปภาพบัตร</div>`;
-
-            content.innerHTML = `
-                <div class="text-center">
-                    ${photoHtml}
-                    <h2 class="text-xl font-bold text-gray-900">${item.emp_name}</h2>
-                    <p class="text-sm text-gray-500">${item.emp_code || '-'} • ${item.department || '-'}</p>
-                </div>
-                <div class="mt-4 space-y-2 text-sm bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <div class="font-bold text-indigo-700 mb-1 text-xs uppercase border-b pb-1">👤 ข้อมูลส่วนตัว</div>
-                    <div class="flex justify-between"><span class="text-gray-500">กลุ่มพนักงาน:</span> <span class="font-medium text-purple-600">${item.emp_group || 'ทั่วไป'}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">วันเกิด:</span> <span class="font-medium">${formatText(item.birth_date)}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">เลขประกันสังคม:</span> <span class="font-mono font-medium">${item.social_security_no || '-'}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">เลขพาสปอร์ต / บัตร:</span> <span class="font-mono font-semibold">${item.passport_no}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">ตำแหน่งที่เก็บเอกสาร:</span> <span class="font-medium text-indigo-600">${item.storage_location || 'ยังไม่ได้ระบุที่เก็บ'}</span></div>
-                    
-                    <div class="font-bold text-indigo-700 mt-3 mb-1 text-xs uppercase border-b pb-1">📅 วันหมดอายุเอกสารสำคัญ</div>
-                    <div class="flex justify-between"><span class="text-gray-500">วันหมดอายุพาสปอร์ต:</span> <span class="font-medium">${formatText(item.expiry_date)}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">วันหมดอายุวีซ่า:</span> <span class="font-medium">${formatText(item.visa_expiry)}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">วันหมดอายุ Work Permit:</span> <span class="font-medium">${formatText(item.work_permit_expiry)}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">วันหมดอายุบัตรชมพู:</span> <span class="font-medium">${formatText(item.pink_card_expiry)}</span></div>
-                    <div class="flex justify-between"><span class="text-gray-500">วันครบกำหนดรายงาน 90 วัน:</span> <span class="font-medium">${formatText(item.ninety_day_expiry)}</span></div>
-                </div>
-            `;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('detailModal');
-            modal.classList.remove('flex');
-            modal.classList.add('hidden');
-        }
-
-        // 🟢 ฟังก์ชันเปิดกล้องสแกนที่ปรับปรุงใหม่ รองรับการเลือกกล้องอัตโนมัติ
-        async function startScanner() {
-            const modal = document.getElementById('scannerModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-
-            html5QrCode = new Html5Qrcode("reader");
-            
-            try {
-                const devices = await Html5Qrcode.getCameras();
-                if (devices && devices.length) {
-                    // เลือกกล้องหลัง (Environment) หรือกล้องตัวแรก
-                    let cameraId = devices[devices.length - 1].id; 
-                    
-                    await html5QrCode.start(
-                        cameraId,
-                        { fps: 15, qrbox: { width: 280, height: 120 } },
-                        (decodedText) => {
-                            document.getElementById('searchBox').value = decodedText;
-                            filterTable();
-                            stopScanner();
-                        },
-                        (errorMessage) => {
-                            // ปล่อยผ่านความผิดพลาดระหว่างสแกน (เช่น ยังไม่เจอโค้ด)
-                        }
-                    );
-                } else {
-                    alert("ไม่พบกล้องในอุปกรณ์นี้");
-                    stopScanner();
+                // ใช้เส้นทางสั้น /api/passports เพื่อรองรับทั้ง Localhost และ Render (HTTPS)
+                const response = await fetch('/api/passports');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-            } catch (err) {
-                console.error("Scanner error:", err);
-                alert("ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบสิทธิ์การใช้งานกล้องในเบราว์เซอร์ (แนะนำให้ใช้ผ่าน localhost)");
-                stopScanner();
-            }
-        }
+                const data = await response.json();
+                
+                // เปลี่ยนสถานะเมื่อเชื่อมต่อสำเร็จ
+                statusBadge.textContent = 'เชื่อมต่อ Server สำเร็จ';
+                statusBadge.className = 'bg-emerald-500 text-white text-xs px-3 py-1 rounded-full';
 
-        function stopScanner() {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    html5QrCode.clear();
-                    document.getElementById('scannerModal').classList.remove('flex');
-                    document.getElementById('scannerModal').classList.add('hidden');
-                }).catch(() => {
-                    document.getElementById('scannerModal').classList.remove('flex');
-                    document.getElementById('scannerModal').classList.add('hidden');
+                const tableBody = document.getElementById('passport-table-body');
+                tableBody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">ยังไม่มีข้อมูลในระบบ</td></tr>`;
+                    return;
+                }
+
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.holder_name || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.passport_no || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.expiry_date || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">ปกติ</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">--</td>
+                    `;
+                    tableBody.appendChild(row);
                 });
-            } else {
-                document.getElementById('scannerModal').classList.remove('flex');
-                document.getElementById('scannerModal').classList.add('hidden');
+
+            } catch (error) {
+                console.error('Failed to load passports', error);
+                statusBadge.textContent = 'ไม่สามารถเชื่อมต่อกับ Server ได้';
+                statusBadge.className = 'bg-amber-500 text-white text-xs px-3 py-1 rounded-full';
             }
         }
 
-        async function borrowItem(id) {
-            const borrower = prompt("ระบุชื่อผู้ขอยืม:");
-            const purpose = prompt("ระบุวัตถุประสงค์ (เช่น ต่อวีซ่า, ทำ CI):");
-            const dueDate = prompt("กำหนดวันคืน:", "เร็วๆ สินะ");
-            
-            if(borrower && purpose && dueDate) {
-                const res = await fetch(`${API_URL}/borrow`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ passport_id: id, borrower_name: borrower, purpose, due_date: dueDate, admin_recorder: 'HR Admin' })
-                });
-                const result = await res.json();
-                alert(result.message);
-                fetchPassports();
-            }
-        }
-
-        async function returnItem(id) {
-            if(confirm("ยืนยันรับพาสปอร์ตคืนเข้าตู้เซฟ?")) {
-                const res = await fetch(`${API_URL}/return`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ passport_id: id })
-                });
-                const result = await res.json();
-                alert(result.message);
-                fetchPassports();
-            }
-        }
-
-        function filterTable() {
-            let input = document.getElementById('searchBox').value.toLowerCase();
-            let filtered = allPassportsData.filter(item => 
-                (item.emp_name && item.emp_name.toLowerCase().includes(input)) || 
-                (item.passport_no && item.passport_no.toLowerCase().includes(input)) ||
-                (item.emp_code && item.emp_code.toLowerCase().includes(input)) ||
-                (item.emp_group && item.emp_group.toLowerCase().includes(input)) ||
-                (item.storage_location && item.storage_location.toLowerCase().includes(input))
-            );
-            renderTable(filtered);
-        }
-
+        // เรียกใช้งานฟังก์ชันเมื่อโหลดหน้าเว็บ
         fetchPassports();
     </script>
 </body>
