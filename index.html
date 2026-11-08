@@ -29,7 +29,7 @@
                 <button onclick="openReportModal()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-sm">
                     📊 รายงาน & แจ้งเตือน
                 </button>
-                <span class="text-sm bg-indigo-600 px-3 py-1.5 rounded-full hidden lg:inline">บริษัท เจริญการฟาร์ม จำกัด</span>
+                <span class="text-sm bg-indigo-600 px-3 py-1.5 rounded-full hidden lg:inline">HR Admin</span>
             </div>
         </div>
     </header>
@@ -355,7 +355,7 @@
         let allPassportsData = [];
         let html5QrCode = null;
 
-        // 🟢 ตั้งค่าเชื่อมต่อ Supabase Storage (ใส่ Anon Key ตัวจริงของคุณเรียบร้อยแล้ว)
+        // 🟢 ตั้งค่าเชื่อมต่อ Supabase Storage (ใช้ Anon Key ตัวจริงของคุณ)
         const SUPABASE_URL = 'https://tdwcsmvqufvbotzbssuq.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd2NzbXZxdWZ2Ym90emJzc3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxMjkzNTksImV4cCI6MjEwOTcwNTM1OX0.EIp4kwdpLzJTa1wh7-SdOFjqomuZ335fnylByYrxxgw'; 
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -771,7 +771,8 @@
                         qrbox: { width: 300, height: 150 } 
                     },
                     (decodedText) => {
-                        document.getElementById('searchBox').value = decodedText;
+                        // ตัดช่องว่างหรืออักขระพิเศษจากการสแกนออกทันที
+                        document.getElementById('searchBox').value = decodedText.trim();
                         filterTable();
                         stopScanner();
                     },
@@ -830,12 +831,13 @@
             }
         }
 
+        // ปรับปรุงฟังก์ชันค้นหาให้รองรับการตัดช่องว่างและค้นหาตรงกันได้อย่างแม่นยำ
         function filterTable() {
-            let input = document.getElementById('searchBox').value.toLowerCase();
+            let input = document.getElementById('searchBox').value.trim().toLowerCase();
             let filtered = allPassportsData.filter(item => 
                 (item.emp_name && item.emp_name.toLowerCase().includes(input)) || 
-                (item.passport_no && item.passport_no.toLowerCase().includes(input)) ||
-                (item.emp_code && item.emp_code.toLowerCase().includes(input)) ||
+                (item.passport_no && item.passport_no.toLowerCase().trim().includes(input)) ||
+                (item.emp_code && item.emp_code.toLowerCase().trim().includes(input)) ||
                 (item.emp_group && item.emp_group.toLowerCase().includes(input)) ||
                 (item.storage_location && item.storage_location.toLowerCase().includes(input))
             );
